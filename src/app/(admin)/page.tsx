@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Users,
@@ -22,7 +22,7 @@ interface Stats {
 }
 
 async function getStats(): Promise<Stats> {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -53,7 +53,7 @@ async function getStats(): Promise<Stats> {
 }
 
 export default async function AdminDashboard() {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const stats = await getStats();
 
   // Get recent activity

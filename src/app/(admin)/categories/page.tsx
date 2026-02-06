@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { adminQuery, adminInsert, adminUpdate, adminDelete } from '@/lib/admin-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,9 +20,7 @@ interface Category {
   slug: string;
   description: string | null;
   icon: string | null;
-  image_url: string | null;
   is_active: boolean;
-  sort_order: number;
   created_at: string;
 }
 
@@ -47,15 +45,15 @@ export default function CategoriesPage() {
 
   async function fetchCategories() {
     setLoading(true);
-    const supabase = createClient();
 
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('sort_order', { ascending: true });
+    const result = await adminQuery({
+      table: 'categories',
+      order: 'name',
+      ascending: true,
+    });
 
-    if (!error && data) {
-      setCategories(data);
+    if (result.data) {
+      setCategories(result.data);
     }
     setLoading(false);
   }
@@ -71,25 +69,20 @@ export default function CategoriesPage() {
     if (!newCategory.name.trim()) return;
 
     setSaving(true);
-    const supabase = createClient();
-
     const slug = newCategory.slug || generateSlug(newCategory.name);
-    const maxOrder = categories.length > 0
-      ? Math.max(...categories.map(c => c.sort_order))
-      : 0;
 
-    const { error } = await supabase
-      .from('categories')
-      .insert({
+    const result = await adminInsert({
+      table: 'categories',
+      data: {
         name: newCategory.name.trim(),
         slug,
         description: newCategory.description.trim() || null,
         icon: newCategory.icon.trim() || null,
         is_active: newCategory.is_active,
-        sort_order: maxOrder + 1,
-      });
+      },
+    });
 
-    if (!error) {
+    if (!result.error) {
       fetchCategories();
       setShowAddForm(false);
       setNewCategory({
@@ -105,20 +98,20 @@ export default function CategoriesPage() {
 
   async function handleUpdateCategory(id: string) {
     setSaving(true);
-    const supabase = createClient();
 
-    const { error } = await supabase
-      .from('categories')
-      .update({
+    const result = await adminUpdate({
+      table: 'categories',
+      id,
+      data: {
         name: editForm.name,
         slug: editForm.slug,
         description: editForm.description,
         icon: editForm.icon,
         is_active: editForm.is_active,
-      })
-      .eq('id', id);
+      },
+    });
 
-    if (!error) {
+    if (!result.error) {
       fetchCategories();
       setEditingId(null);
       setEditForm({});
@@ -131,25 +124,21 @@ export default function CategoriesPage() {
       return;
     }
 
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', id);
+    const result = await adminDelete('categories', id);
 
-    if (!error) {
+    if (!result.error) {
       fetchCategories();
     }
   }
 
   async function handleToggleActive(id: string, currentStatus: boolean) {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('categories')
-      .update({ is_active: !currentStatus })
-      .eq('id', id);
+    const result = await adminUpdate({
+      table: 'categories',
+      id,
+      data: { is_active: !currentStatus },
+    });
 
-    if (!error) {
+    if (!result.error) {
       fetchCategories();
     }
   }

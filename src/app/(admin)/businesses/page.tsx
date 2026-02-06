@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { adminQuery, adminUpdate } from '@/lib/admin-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,8 +30,8 @@ interface Business {
   city: string | null;
   state: string | null;
   is_verified: boolean;
-  rating: number;
-  review_count: number;
+  rating_average: number | null;
+  rating_count: number | null;
   created_at: string;
 }
 
@@ -53,42 +53,44 @@ export default function BusinessesPage() {
 
   async function fetchBusinesses() {
     setLoading(true);
-    const supabase = createClient();
 
-    let query = supabase
-      .from('businesses')
-      .select('*', { count: 'exact' });
+    const filters: Array<{ type: string; column?: string; value?: string }> = [];
 
     if (verifiedFilter === 'verified') {
-      query = query.eq('is_verified', true);
+      filters.push({ type: 'eq', column: 'is_verified', value: 'true' });
     } else if (verifiedFilter === 'unverified') {
-      query = query.eq('is_verified', false);
+      filters.push({ type: 'eq', column: 'is_verified', value: 'false' });
     }
 
     if (searchQuery) {
-      query = query.or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%`);
+      filters.push({ type: 'or', value: `name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%` });
     }
 
-    const { data, count, error } = await query
-      .order('created_at', { ascending: false })
-      .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
+    const result = await adminQuery({
+      table: 'businesses',
+      filters,
+      order: 'created_at',
+      ascending: false,
+      from: (currentPage - 1) * ITEMS_PER_PAGE,
+      to: currentPage * ITEMS_PER_PAGE - 1,
+      count: true,
+    });
 
-    if (!error && data) {
-      setBusinesses(data);
-      setTotalCount(count || 0);
+    if (result.data) {
+      setBusinesses(result.data);
+      setTotalCount(result.count || 0);
     }
     setLoading(false);
   }
 
   async function handleVerifyBusiness(businessId: string, verify: boolean) {
-    const supabase = createClient();
+    const result = await adminUpdate({
+      table: 'businesses',
+      id: businessId,
+      data: { is_verified: verify },
+    });
 
-    const { error } = await supabase
-      .from('businesses')
-      .update({ is_verified: verify })
-      .eq('id', businessId);
-
-    if (!error) {
+    if (!result.error) {
       fetchBusinesses();
     }
     setActionMenuOpen(null);
@@ -114,7 +116,7 @@ export default function BusinessesPage() {
                 placeholder="Search by name, email, or city..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fetchBusinesses()}
+                onKeyDown={(e) => { if (e.key === 'Enter') { setCurrentPage(1); fetchBusinesses(); } }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
               />
             </div>
@@ -130,7 +132,7 @@ export default function BusinessesPage() {
               <option value="verified">Verified Only</option>
               <option value="unverified">Unverified Only</option>
             </select>
-            <Button onClick={() => fetchBusinesses()}>
+            <Button onClick={() => { setCurrentPage(1); fetchBusinesses(); }}>
               Search
             </Button>
           </div>
@@ -189,7 +191,7 @@ export default function BusinessesPage() {
                         <td className="py-3 px-4">
                           <span className="flex items-center gap-1 text-gray-600">
                             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                            {business.rating.toFixed(1)} ({business.review_count})
+                            {(business.rating_average ?? 0).toFixed(1)} ({business.rating_count ?? 0})
                           </span>
                         </td>
                         <td className="py-3 px-4">

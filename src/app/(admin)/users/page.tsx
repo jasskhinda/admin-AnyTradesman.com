@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { adminQuery } from '@/lib/admin-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,27 +43,30 @@ export default function UsersPage() {
 
   async function fetchUsers() {
     setLoading(true);
-    const supabase = createClient();
 
-    let query = supabase
-      .from('profiles')
-      .select('*', { count: 'exact' });
+    const filters: Array<{ type: string; column?: string; value?: string }> = [];
 
     if (roleFilter !== 'all') {
-      query = query.eq('role', roleFilter);
+      filters.push({ type: 'eq', column: 'role', value: roleFilter });
     }
 
     if (searchQuery) {
-      query = query.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
+      filters.push({ type: 'or', value: `email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%` });
     }
 
-    const { data, count, error } = await query
-      .order('created_at', { ascending: false })
-      .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
+    const result = await adminQuery({
+      table: 'profiles',
+      filters,
+      order: 'created_at',
+      ascending: false,
+      from: (currentPage - 1) * ITEMS_PER_PAGE,
+      to: currentPage * ITEMS_PER_PAGE - 1,
+      count: true,
+    });
 
-    if (!error && data) {
-      setUsers(data);
-      setTotalCount(count || 0);
+    if (result.data) {
+      setUsers(result.data);
+      setTotalCount(result.count || 0);
     }
     setLoading(false);
   }
@@ -93,7 +96,7 @@ export default function UsersPage() {
                 placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fetchUsers()}
+                onKeyDown={(e) => { if (e.key === 'Enter') { setCurrentPage(1); fetchUsers(); } }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -110,7 +113,7 @@ export default function UsersPage() {
               <option value="business_owner">Business Owners</option>
               <option value="admin">Admins</option>
             </select>
-            <Button onClick={() => fetchUsers()}>
+            <Button onClick={() => { setCurrentPage(1); fetchUsers(); }}>
               Search
             </Button>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { adminQuery, adminUpdate } from '@/lib/admin-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,8 +29,6 @@ interface Credential {
   expiry_date: string | null;
   document_url: string | null;
   verification_status: 'pending' | 'verified' | 'rejected';
-  verified_at: string | null;
-  verified_by: string | null;
   created_at: string;
   business?: {
     id: string;
@@ -56,52 +54,49 @@ export default function VerificationsPage() {
 
   async function fetchCredentials() {
     setLoading(true);
-    const supabase = createClient();
 
-    let query = supabase
-      .from('business_credentials')
-      .select(`
-        *,
-        business:businesses(id, name, email)
-      `, { count: 'exact' });
+    const filters: Array<{ type: string; column?: string; value?: string }> = [];
 
     if (statusFilter !== 'all') {
-      query = query.eq('verification_status', statusFilter);
+      filters.push({ type: 'eq', column: 'verification_status', value: statusFilter });
     }
 
-    const { data, count, error } = await query
-      .order('created_at', { ascending: false })
-      .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
+    const result = await adminQuery({
+      table: 'business_credentials',
+      select: '*, business:businesses(id, name, email)',
+      filters,
+      order: 'created_at',
+      ascending: false,
+      from: (currentPage - 1) * ITEMS_PER_PAGE,
+      to: currentPage * ITEMS_PER_PAGE - 1,
+      count: true,
+    });
 
-    if (!error && data) {
-      setCredentials(data as Credential[]);
-      setTotalCount(count || 0);
+    if (result.data) {
+      setCredentials(result.data as Credential[]);
+      setTotalCount(result.count || 0);
     }
     setLoading(false);
   }
 
   async function handleVerification(credentialId: string, status: 'verified' | 'rejected') {
     setProcessing(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    const { error } = await supabase
-      .from('business_credentials')
-      .update({
-        verification_status: status,
-        verified_at: new Date().toISOString(),
-        verified_by: user?.id,
-      })
-      .eq('id', credentialId);
+    const result = await adminUpdate({
+      table: 'business_credentials',
+      id: credentialId,
+      data: { verification_status: status },
+    });
 
-    if (!error) {
+    if (!result.error) {
       if (status === 'verified') {
         const credential = credentials.find(c => c.id === credentialId);
         if (credential?.business_id) {
-          await supabase
-            .from('businesses')
-            .update({ is_verified: true })
-            .eq('id', credential.business_id);
+          await adminUpdate({
+            table: 'businesses',
+            id: credential.business_id,
+            data: { is_verified: true },
+          });
         }
       }
       fetchCredentials();
@@ -391,11 +386,6 @@ export default function VerificationsPage() {
                   {getStatusIcon(selectedCredential.verification_status)}
                   {selectedCredential.verification_status}
                 </span>
-                {selectedCredential.verified_at && (
-                  <span className="text-sm text-gray-500">
-                    on {new Date(selectedCredential.verified_at).toLocaleDateString()}
-                  </span>
-                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
