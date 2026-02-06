@@ -46,6 +46,7 @@ export default function BusinessesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBusinesses();
@@ -84,6 +85,7 @@ export default function BusinessesPage() {
   }
 
   async function handleVerifyBusiness(businessId: string, verify: boolean) {
+    setProcessing(businessId);
     const result = await adminUpdate({
       table: 'businesses',
       id: businessId,
@@ -93,6 +95,7 @@ export default function BusinessesPage() {
     if (!result.error) {
       fetchBusinesses();
     }
+    setProcessing(null);
     setActionMenuOpen(null);
   }
 
@@ -212,47 +215,54 @@ export default function BusinessesPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="relative">
-                            <button
-                              onClick={() => setActionMenuOpen(actionMenuOpen === business.id ? null : business.id)}
-                              className="p-2 hover:bg-gray-100 rounded"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                            {actionMenuOpen === business.id && (
-                              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[180px]">
-                                <button
-                                  onClick={() => router.push(`/businesses/${business.id}`)}
-                                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
-                                >
-                                  View Details
-                                </button>
-                                {business.is_verified ? (
-                                  <button
-                                    onClick={() => handleVerifyBusiness(business.id, false)}
-                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-orange-600"
-                                  >
-                                    <Clock className="w-4 h-4 inline mr-2" />
-                                    Remove Verification
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => handleVerifyBusiness(business.id, true)}
-                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-green-600"
-                                  >
-                                    <Shield className="w-4 h-4 inline mr-2" />
-                                    Verify Business
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => alert('Suspend functionality - requires backend')}
-                                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-red-600"
-                                >
-                                  <Ban className="w-4 h-4 inline mr-2" />
-                                  Suspend Business
-                                </button>
-                              </div>
+                          <div className="flex items-center gap-2">
+                            {business.is_verified ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleVerifyBusiness(business.id, false)}
+                                disabled={processing === business.id}
+                                className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                              >
+                                <Clock className="w-4 h-4 mr-1" />
+                                Revoke
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => handleVerifyBusiness(business.id, true)}
+                                disabled={processing === business.id}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                <Shield className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
                             )}
+                            <div className="relative">
+                              <button
+                                onClick={() => setActionMenuOpen(actionMenuOpen === business.id ? null : business.id)}
+                                className="p-2 hover:bg-gray-100 rounded"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                              {actionMenuOpen === business.id && (
+                                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[180px]">
+                                  <button
+                                    onClick={() => router.push(`/businesses/${business.id}`)}
+                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-900"
+                                  >
+                                    View Details
+                                  </button>
+                                  <button
+                                    onClick={() => alert('Suspend functionality - requires backend')}
+                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-red-600"
+                                  >
+                                    <Ban className="w-4 h-4 inline mr-2" />
+                                    Suspend Business
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
