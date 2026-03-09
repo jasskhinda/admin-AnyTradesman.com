@@ -59,3 +59,23 @@ export async function adminDelete(table: string, id: string) {
   });
   return res.json();
 }
+
+export async function adminUpload(file: File, bucket: string = 'hero-images') {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('bucket', bucket);
+
+  const res = await fetch('/api/admin/upload', {
+    method: 'POST',
+    body: formData,
+  });
+  return res.json();
+}
+
+export async function adminDeleteFile(path: string, bucket: string = 'hero-images') {
+  const params = new URLSearchParams({ path, bucket });
+  const res = await fetch(`/api/admin/upload?${params.toString()}`, {
+    method: 'DELETE',
+  });
+  return res.json();
+}

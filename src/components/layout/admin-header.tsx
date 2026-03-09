@@ -9,6 +9,7 @@ import {
   Building2,
   FileCheck,
   LayoutGrid,
+  Image as ImageIcon,
   LogOut,
   ExternalLink,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Businesses', href: '/businesses', icon: Building2 },
   { name: 'Verifications', href: '/verifications', icon: FileCheck },
   { name: 'Categories', href: '/categories', icon: LayoutGrid },
+  { name: 'Homepage', href: '/homepage', icon: ImageIcon },
 ];
 
 export function AdminHeader() {
