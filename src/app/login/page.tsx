@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
 
 function LoginForm() {
   const router = useRouter();
@@ -61,9 +61,14 @@ function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <div className="flex justify-center mb-4">
-          <div className="p-3 bg-slate-900 rounded-xl">
-            <ShieldCheck className="w-8 h-8 text-white" />
-          </div>
+          <Image
+            src="/Logo - FINAL PNG.png"
+            alt="AnyTradesman"
+            width={160}
+            height={48}
+            className="h-12 w-auto"
+            priority
+          />
         </div>
         <CardTitle className="text-2xl">Admin Login</CardTitle>
         <CardDescription>Sign in to access the admin panel</CardDescription>
