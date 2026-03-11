@@ -10,6 +10,7 @@ import {
   FileCheck,
   LayoutGrid,
   Image as ImageIcon,
+  FileText,
   LogOut,
   ExternalLink,
 } from 'lucide-react';
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Businesses', href: '/businesses', icon: Building2 },
+  { name: 'Requests', href: '/requests', icon: FileText },
   { name: 'Verifications', href: '/verifications', icon: FileCheck },
   { name: 'Categories', href: '/categories', icon: LayoutGrid },
   { name: 'Homepage', href: '/homepage', icon: ImageIcon },
