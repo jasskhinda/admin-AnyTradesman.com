@@ -15,6 +15,8 @@ import {
   User,
   Eye,
   X,
+  Mail,
+  Phone,
 } from 'lucide-react';
 
 interface ServiceRequest {
@@ -32,6 +34,12 @@ interface ServiceRequest {
   budget_max: number | null;
   status: 'open' | 'matched' | 'in_progress' | 'completed' | 'canceled';
   created_at: string;
+}
+
+interface CustomerProfile {
+  full_name: string | null;
+  email: string;
+  phone: string | null;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -60,6 +68,8 @@ export default function RequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
@@ -111,6 +121,23 @@ export default function RequestsPage() {
       }
     }
     setUpdatingStatus(false);
+  }
+
+  async function handleViewRequest(req: ServiceRequest) {
+    setSelectedRequest(req);
+    setCustomerProfile(null);
+    setLoadingCustomer(true);
+
+    const result = await adminQuery({
+      table: 'profiles',
+      select: 'full_name,email,phone',
+      filters: [{ type: 'eq', column: 'id', value: req.customer_id }],
+    });
+
+    if (result.data && result.data.length > 0) {
+      setCustomerProfile(result.data[0]);
+    }
+    setLoadingCustomer(false);
   }
 
   function formatBudget(min: number | null, max: number | null): string {
@@ -234,7 +261,7 @@ export default function RequestsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedRequest(req)}
+                            onClick={() => handleViewRequest(req)}
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             View
@@ -344,11 +371,30 @@ export default function RequestsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-500">Customer ID</label>
-                <p className="mt-1 text-gray-900 flex items-center gap-1 text-sm font-mono">
-                  <User className="w-4 h-4 text-gray-400" />
-                  {selectedRequest.customer_id}
-                </p>
+                <label className="text-sm font-medium text-gray-500">Customer</label>
+                {loadingCustomer ? (
+                  <div className="mt-1 flex items-center gap-2 text-gray-400 text-sm">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    Loading...
+                  </div>
+                ) : customerProfile ? (
+                  <div className="mt-1 space-y-1">
+                    <p className="text-gray-900 flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-400" />
+                      {customerProfile.full_name || 'Unnamed'}
+                    </p>
+                    <p className="text-gray-600 text-sm flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      {customerProfile.email}
+                    </p>
+                    <p className="text-gray-600 text-sm flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      {customerProfile.phone || 'No phone provided'}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-gray-500 text-sm">Customer not found</p>
+                )}
               </div>
 
               {/* Status Update */}
