@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   Image as ImageIcon,
   FileText,
+  Briefcase,
   LogOut,
   ExternalLink,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Requests', href: '/requests', icon: FileText },
   { name: 'Verifications', href: '/verifications', icon: FileCheck },
   { name: 'Categories', href: '/categories', icon: LayoutGrid },
+  { name: 'Careers', href: '/careers', icon: Briefcase },
   { name: 'Homepage', href: '/homepage', icon: ImageIcon },
 ];
 
