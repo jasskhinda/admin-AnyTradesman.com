@@ -37,7 +37,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Auth routes that don't require login
-  const publicRoutes = ['/login', '/forgot-password'];
+  const publicRoutes = ['/login', '/forgot-password', '/reset-password'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
   // If not logged in and not on a public route, redirect to login

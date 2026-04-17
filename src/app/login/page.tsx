@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -100,6 +101,15 @@ function LoginForm() {
             required
             autoComplete="current-password"
           />
+
+          <div className="flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Forgot password?
+            </Link>
+          </div>
 
           <Button type="submit" className="w-full" isLoading={isLoading}>
             Sign in
