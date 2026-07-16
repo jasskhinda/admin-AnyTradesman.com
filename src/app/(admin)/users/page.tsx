@@ -1,19 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { adminQuery } from '@/lib/admin-api';
+import { adminQuery, sanitizeSearch } from '@/lib/admin-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Users,
   Search,
   MoreVertical,
-  Ban,
   Mail,
+  Phone,
   Calendar,
   ChevronLeft,
   ChevronRight,
+  User as UserIcon,
+  X,
 } from 'lucide-react';
 
 interface User {
@@ -28,7 +29,6 @@ interface User {
 const ITEMS_PER_PAGE = 10;
 
 export default function UsersPage() {
-  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +36,7 @@ export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -50,8 +51,9 @@ export default function UsersPage() {
       filters.push({ type: 'eq', column: 'role', value: roleFilter });
     }
 
-    if (searchQuery) {
-      filters.push({ type: 'or', value: `email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%` });
+    const q = sanitizeSearch(searchQuery);
+    if (q) {
+      filters.push({ type: 'or', value: `email.ilike.%${q}%,full_name.ilike.%${q}%` });
     }
 
     const result = await adminQuery({
@@ -69,11 +71,6 @@ export default function UsersPage() {
       setTotalCount(result.count || 0);
     }
     setLoading(false);
-  }
-
-  async function handleSuspendUser(userId: string) {
-    alert(`User suspended (demo - requires backend implementation)`);
-    setActionMenuOpen(null);
   }
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -193,20 +190,14 @@ export default function UsersPage() {
                             {actionMenuOpen === user.id && (
                               <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[150px]">
                                 <button
-                                  onClick={() => router.push(`/users/${user.id}`)}
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setActionMenuOpen(null);
+                                  }}
                                   className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
                                 >
                                   View Details
                                 </button>
-                                {user.role !== 'admin' && (
-                                  <button
-                                    onClick={() => handleSuspendUser(user.id)}
-                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-red-600"
-                                  >
-                                    <Ban className="w-4 h-4 inline mr-2" />
-                                    Suspend User
-                                  </button>
-                                )}
                               </div>
                             )}
                           </div>
@@ -250,6 +241,65 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* User Detail Modal */}
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-900">User Details</h2>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <UserIcon className="w-5 h-5 text-gray-400" />
+                  {selectedUser.full_name || 'Unnamed'}
+                </h3>
+                <span className={`inline-block mt-2 px-2 py-1 text-xs rounded ${
+                  selectedUser.role === 'business_owner'
+                    ? 'bg-green-100 text-green-700'
+                    : selectedUser.role === 'admin'
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {selectedUser.role === 'business_owner' ? 'Business' : selectedUser.role}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Email</label>
+                  <p className="mt-1 text-gray-900 flex items-center gap-1">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    {selectedUser.email}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Phone</label>
+                  <p className="mt-1 text-gray-900 flex items-center gap-1">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    {selectedUser.phone || 'No phone provided'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500">Joined</label>
+                <p className="mt-1 text-gray-900 flex items-center gap-1">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  {new Date(selectedUser.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

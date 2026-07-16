@@ -11,7 +11,6 @@ import {
   Trash2,
   Save,
   X,
-  GripVertical,
 } from 'lucide-react';
 
 interface Category {
@@ -279,7 +278,6 @@ export default function CategoriesPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 w-8"></th>
                     <th className="text-left py-3 px-4 font-medium text-gray-500">Name</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-500">Slug</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-500">Description</th>
@@ -290,9 +288,6 @@ export default function CategoriesPage() {
                 <tbody>
                   {categories.map((category) => (
                     <tr key={category.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
-                      </td>
                       <td className="py-3 px-4">
                         {editingId === category.id ? (
                           <input

@@ -18,6 +18,7 @@ const ALLOWED_TABLES = [
   'business_categories',
   'hero_config',
   'hero_slides',
+  'job_postings',
 ];
 
 async function verifyAdmin(request: NextRequest): Promise<boolean> {

@@ -2,6 +2,11 @@
 // Routes all queries through /api/admin which uses the service role key
 // to bypass RLS restrictions.
 
+// Strips characters that would break PostgREST .or()/.ilike filter syntax.
+export function sanitizeSearch(q: string): string {
+  return q.replace(/[,()\\%]/g, '');
+}
+
 interface QueryOptions {
   table: string;
   select?: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { adminQuery, adminUpdate } from '@/lib/admin-api';
+import { adminQuery, adminUpdate, sanitizeSearch } from '@/lib/admin-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -85,8 +85,9 @@ export default function RequestsPage() {
       filters.push({ type: 'eq', column: 'status', value: statusFilter });
     }
 
-    if (searchQuery) {
-      filters.push({ type: 'or', value: `title.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%` });
+    const q = sanitizeSearch(searchQuery);
+    if (q) {
+      filters.push({ type: 'or', value: `title.ilike.%${q}%,city.ilike.%${q}%,description.ilike.%${q}%` });
     }
 
     const result = await adminQuery({
