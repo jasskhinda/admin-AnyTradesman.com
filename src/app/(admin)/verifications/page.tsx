@@ -47,6 +47,27 @@ export default function VerificationsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [openingDoc, setOpeningDoc] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+
+  // Documents sit in a private bucket; ask the server for a short-lived signed URL
+  async function openDocument(path: string) {
+    setOpeningDoc(true);
+    setDocError(null);
+    try {
+      const res = await fetch(`/api/admin/document?path=${encodeURIComponent(path)}`);
+      const json = await res.json();
+      if (!res.ok || !json.url) {
+        setDocError(json.error || 'Could not open the document.');
+        return;
+      }
+      window.open(json.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      setDocError('Could not open the document. Please try again.');
+    } finally {
+      setOpeningDoc(false);
+    }
+  }
 
   useEffect(() => {
     fetchCredentials();
@@ -217,6 +238,17 @@ export default function VerificationsPage() {
                         </td>
                         <td className="py-3 px-4">
                           <span className="capitalize">{credential.credential_type.replace('_', ' ')}</span>
+                          {credential.document_url ? (
+                            <span className="ml-2 inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                              <FileText className="w-3 h-3" />
+                              doc
+                            </span>
+                          ) : (
+                            <span className="ml-2 inline-flex items-center gap-1 text-xs text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded">
+                              <AlertCircle className="w-3 h-3" />
+                              no doc
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-gray-600">
                           {credential.credential_number || '-'}
@@ -248,7 +280,10 @@ export default function VerificationsPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setSelectedCredential(credential)}
+                              onClick={() => {
+                                setDocError(null);
+                                setSelectedCredential(credential);
+                              }}
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
@@ -366,20 +401,26 @@ export default function VerificationsPage() {
                 </div>
               </div>
 
-              {selectedCredential.document_url && (
-                <div>
-                  <p className="text-sm text-gray-500 mb-2">Document</p>
-                  <a
-                    href={selectedCredential.document_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+              <div>
+                <p className="text-sm text-gray-500 mb-2">Document</p>
+                {selectedCredential.document_url ? (
+                  <button
+                    onClick={() => openDocument(selectedCredential.document_url!)}
+                    disabled={openingDoc}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 disabled:opacity-50"
                   >
                     <Download className="w-4 h-4" />
-                    View/Download Document
-                  </a>
-                </div>
-              )}
+                    {openingDoc ? 'Opening…' : 'View/Download Document'}
+                  </button>
+                ) : (
+                  <p className="flex items-center gap-2 text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded px-3 py-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    No document attached — submitted before uploads were required. Ask the
+                    business to re-submit with a document before approving.
+                  </p>
+                )}
+                {docError && <p className="text-sm text-red-600 mt-2">{docError}</p>}
+              </div>
 
               <div className="flex items-center gap-2 pt-4 border-t">
                 <span className={`flex items-center gap-1 px-3 py-1 text-sm rounded ${getStatusColor(selectedCredential.verification_status)}`}>
